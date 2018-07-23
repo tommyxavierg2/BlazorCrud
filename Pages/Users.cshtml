@@ -1,0 +1,107 @@
+﻿@page "/users"
+@inject HttpClient Http
+@using System.Collections
+
+<h1>Registered Users</h1>
+
+<p>This component demonstrates fetching data from the server.</p>
+
+@if (users == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Lastname</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.id</td>
+
+                    @if (user.id == userIdEdit) 
+                    {
+                        <td>
+                            <input name="name" type="text" bind="@user.Name" class="form-control"/>
+                        </td>
+
+                        <td>
+                            <input name="lastname" type="text" bind="@user.Lastname" class="form-control"/>
+                        </td>
+                    }
+                    
+                    else
+                    {
+                        <td>
+                            <input name="name" type="text" bind="@user.Name" class="form-control" readonly="true"/>
+                        </td>
+                    
+                        <td>
+                            <input name="lastname" type="text" bind="@user.Lastname" class="form-control" readonly="true"/>
+                        </td>
+                    }
+
+                    <td> 
+                        <button type="button" class="btn btn-danger" onclick="@(() => deleteUser(user))">Delete</button> 
+                    </td>
+                    
+                    @if (edit == false) 
+                    {
+                        <td> <button type="button" class="btn btn-primary" onclick="@(() => { edit = true; userIdEdit = user.id; checkSelectedUser(user.id); } )">Edit</button> </td>
+                    }
+                    else 
+                    {
+                        <td> <button type="button" class="btn btn-warning" onclick="@(() => { edit = false; userIdEdit = 0; } )">Cancel</button> </td>
+                        <td> <button type="button" class="btn btn-success" onclick="@(() => updateUser(user))">Save</button> </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@functions {
+
+    IList<User> users;
+    public bool edit = false;
+    public int userIdEdit;
+
+    private bool checkSelectedUser(int userId) {
+        if (userId == userIdEdit) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    protected override async Task OnInitAsync() {
+        await RefreshUserList();
+    }
+
+    private async Task RefreshUserList()
+    {
+        users = await Http.GetJsonAsync<User[]>("http://localhost:3000/users/");
+    }
+
+    private async Task deleteUser(User user) {
+        Http.DeleteAsync($"http://localhost:3000/users/{user.id}");
+        await RefreshUserList();
+    }
+
+    private async Task updateUser(User user) {
+        Http.PutJsonAsync($"http://localhost:3000/users/{user.id}", user);
+        RefreshUserList();
+        edit = false;
+        userIdEdit = 0;
+    }  
+
+}
